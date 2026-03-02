@@ -5,7 +5,7 @@ const { BetaAnalyticsDataClient } = require('@google-analytics/data');
 const { URL } = require('url');
 
 const GA_PROPERTY_ID = '293164189';
-const GA_KEY_FILE = './service-account.json';
+const GA_KEY_FILE = './ga4-service-account.json';
 
 function clamp(num, min, max) {
   return Math.max(min, Math.min(num, max));
