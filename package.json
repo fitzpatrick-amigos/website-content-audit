@@ -15,8 +15,10 @@
     "cheerio": "^1.2.0",
     "csv-parser": "^3.2.0",
     "csv-writer": "^1.6.0",
+    "formdata-node": "^6.0.3",
     "minimist": "^1.2.8",
     "nodemailer": "^8.0.1",
+    "nvm": "^0.0.4",
     "playwright": "^1.58.2"
   }
 }

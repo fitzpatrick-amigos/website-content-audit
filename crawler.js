@@ -1,3 +1,8 @@
+// Polyfill global File and Blob for Node 18 (undici compatibility)
+const { File, Blob } = require('formdata-node');
+global.File = global.File || File;
+global.Blob = global.Blob || Blob;
+
 const { chromium } = require('playwright');
 const cheerio = require('cheerio');
 const { createObjectCsvWriter } = require('csv-writer');
@@ -67,6 +72,8 @@ function daysSince(dateString) {
 
       if (!response) continue;
 
+      const finalUrl = page.url();
+
       const contentType = response.headers()['content-type'] || '';
       if (!contentType.includes('text/html')) continue;
 
@@ -94,7 +101,7 @@ function daysSince(dateString) {
         '';
 
       results.push({
-        url,
+        url: finalUrl,
         status,
         title,
         title_length: title.length,
@@ -105,8 +112,8 @@ function daysSince(dateString) {
         missing_alt_count: missingAltCount,
         internal_link_count: internalLinkCount,
         has_meta_description: metaDescription ? true : false,
-        duplicate_title: false, // will compute later
-        readability_grade: 0, // placeholder
+        duplicate_title: false,
+        readability_grade: 0,
         days_since_update: daysSince(publishDate),
         noindex: metaRobots.includes('noindex')
       });

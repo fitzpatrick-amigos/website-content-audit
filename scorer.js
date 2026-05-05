@@ -4,8 +4,8 @@ const { createObjectCsvWriter } = require('csv-writer');
 const { BetaAnalyticsDataClient } = require('@google-analytics/data');
 const { URL } = require('url');
 
-const GA_PROPERTY_ID = '293164189';
-const GA_KEY_FILE = './ga4-service-account.json';
+const GA_PROPERTY_ID = '379649750';
+const GA_KEY_FILE = './service-account.json';
 
 function clamp(num, min, max) {
   return Math.max(min, Math.min(num, max));
@@ -115,7 +115,7 @@ async function main() {
           has_meta_description: row.has_meta_description === 'true',
           duplicate_title: row.duplicate_title === 'true',
           title_length: +row.title_length || 0,
-          days_since_update: +row.days_since_update || 9999,
+          days_since_update: +row.days_since_update || null,
           noindex: row.noindex === 'true'
         });
       })
@@ -133,7 +133,7 @@ async function main() {
       avg_engagement_time: 0,
       engagement_rate: 0
     };
-
+    p.traffic_percentile = percentile(ga.pageviews, Object.values(gaData).map(d => d.pageviews));
     p.pageviews = ga.pageviews;
     p.avg_engagement_time = ga.avg_engagement_time;
     p.engagement_rate = ga.engagement_rate;
