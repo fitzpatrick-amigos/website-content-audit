@@ -46,15 +46,21 @@ function scoreContent(p) {
   score += p.has_meta_description ? 5 : 0;
   score += p.title_length >= 30 && p.title_length <= 65 ? 5 : 2;
 
+  const fre = p.readability_grade;
+  if (fre >= 70) score += 10;
+  else if (fre >= 60) score += 7;
+  else if (fre >= 50) score += 3;
+  else if (fre < 30) score -= 10;
+
   if (p.duplicate_title) score -= 15;
 
   return clamp(score, 0, 100);
 }
 
 function scoreFreshness(p) {
-  if (p.days_since_update < 365) return 100;
-  if (p.days_since_update < 730) return 70;
-  if (p.days_since_update < 1095) return 40;
+  if (p.days_since_update < 45) return 100;
+  if (p.days_since_update < 90) return 70;
+  if (p.days_since_update < 180) return 40;
   return 20;
 }
 
@@ -76,7 +82,10 @@ async function getGAData() {
 
   const [response] = await client.runReport({
     property: `properties/${GA_PROPERTY_ID}`,
-    dateRanges: [{ startDate: '90daysAgo', endDate: 'today' }],
+    dateRanges: [
+      { startDate: '90daysAgo', endDate: 'today' },
+      { startDate: '365daysAgo', endDate: 'today' }
+    ],
     dimensions: [{ name: 'pagePath' }],
     metrics: [
       { name: 'screenPageViews' },
@@ -85,13 +94,18 @@ async function getGAData() {
     ],
   });
 
+  // With 2 date ranges and 3 metrics, metricValues[0..2] = range1, [3..5] = range2
   const data = {};
   response.rows.forEach(row => {
     const path = row.dimensionValues[0].value.replace(/\/$/, '') || '/';
+    const pv90 = +row.metricValues[0].value;
+    const pv365 = +row.metricValues[3].value;
     data[path] = {
-      pageviews: +row.metricValues[0].value,
+      pageviews: pv90,
       avg_engagement_time: +row.metricValues[1].value,
-      engagement_rate: +row.metricValues[2].value
+      engagement_rate: +row.metricValues[2].value,
+      avg_monthly_pageviews_90d: Math.round(pv90 / 3),
+      avg_monthly_pageviews_365d: Math.round(pv365 / 12)
     };
   });
 
@@ -115,6 +129,7 @@ async function main() {
           has_meta_description: row.has_meta_description === 'true',
           duplicate_title: row.duplicate_title === 'true',
           title_length: +row.title_length || 0,
+          readability_grade: +row.readability_grade || 0,
           days_since_update: +row.days_since_update || null,
           noindex: row.noindex === 'true'
         });
@@ -131,12 +146,16 @@ async function main() {
     const ga = gaData[path] || {
       pageviews: 0,
       avg_engagement_time: 0,
-      engagement_rate: 0
+      engagement_rate: 0,
+      avg_monthly_pageviews_90d: 0,
+      avg_monthly_pageviews_365d: 0
     };
     p.traffic_percentile = percentile(ga.pageviews, Object.values(gaData).map(d => d.pageviews));
     p.pageviews = ga.pageviews;
     p.avg_engagement_time = ga.avg_engagement_time;
     p.engagement_rate = ga.engagement_rate;
+    p.avg_monthly_pageviews_90d = ga.avg_monthly_pageviews_90d;
+    p.avg_monthly_pageviews_365d = ga.avg_monthly_pageviews_365d;
   });
 
   const stats = {

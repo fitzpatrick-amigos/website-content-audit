@@ -44,6 +44,26 @@ function isExcluded(url) {
   return EXCLUDED_PATHS.some(p => path.startsWith(p));
 }
 
+function countSyllables(word) {
+  word = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!word.length) return 0;
+  word = word.replace(/e$/, '');
+  const matches = word.match(/[aeiouy]+/g);
+  return Math.max(1, matches ? matches.length : 1);
+}
+
+function fleschReadingEase(text) {
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  const words = text.split(/\s+/).filter(Boolean);
+  if (!sentences.length || !words.length) return 0;
+
+  const totalSyllables = words.reduce((sum, w) => sum + countSyllables(w), 0);
+  const score = 206.835
+    - 1.015 * (words.length / sentences.length)
+    - 84.6 * (totalSyllables / words.length);
+  return Math.round(Math.max(0, Math.min(100, score)));
+}
+
 function daysSince(dateString) {
   if (!dateString) return 9999;
   const date = new Date(dateString);
@@ -113,7 +133,7 @@ function daysSince(dateString) {
         internal_link_count: internalLinkCount,
         has_meta_description: metaDescription ? true : false,
         duplicate_title: false,
-        readability_grade: 0,
+        readability_grade: fleschReadingEase(bodyText),
         days_since_update: daysSince(publishDate),
         noindex: metaRobots.includes('noindex')
       });
